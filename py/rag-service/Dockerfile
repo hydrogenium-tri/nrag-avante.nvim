@@ -6,7 +6,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl git \
   && rm -rf /var/lib/apt/lists/* \
-  && curl -LsSf https://astral.sh/uv/install.sh | sh
+ && curl -LsSf https://astral.sh/uv/install.sh | sh \
+ || { echo "uv install failed, using pip fallback"; pip install uv; }
 
 ENV PATH="/root/.local/bin:$PATH" \
   PYTHONPATH=/app/src \
@@ -16,7 +17,7 @@ ENV PATH="/root/.local/bin:$PATH" \
 COPY requirements.txt .
 
 # 直接安装到系统依赖中，不创建虚拟环境
-RUN uv pip install --system -r requirements.txt
+RUN uv pip install --system -r requirements.txt || pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
