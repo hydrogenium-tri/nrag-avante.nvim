@@ -11,7 +11,8 @@ The following table shows which model types are supported by each provider:
 | dashscope  | Yes         | Yes               |
 | ollama     | Yes         | Yes               |
 | openai     | Yes         | Yes               |
-| openrouter | Yes         | No                |
+| openrouter | Yes | No |
+| openai_like | Yes | Yes |
 
 ## LLM Provider Configuration
 
@@ -77,6 +78,66 @@ llm = { -- Configuration for the Language Model (LLM) used by the RAG service
   api_key = "OPENROUTER_API_KEY", -- The environment variable name for the LLM API key
   model = "openai/gpt-4o-mini", -- The LLM model name (e.g., "openai/gpt-4o-mini", "mistralai/mistral-7b-instruct")
   extra = nil, -- Extra configuration options for the LLM (optional)
+},
+```
+
+### OpenAI-Like LLM Configuration (For OpenAI-Compatible APIs)
+
+Use this provider to access any service that implements the OpenAI API protocol, including:
+- **Zhipu AI (GLM series)**: glm-4-flash, glm-4, etc.
+- **Alibaba DashScope (Qwen series)**: qwen-plus, qwen-max, etc.
+- **Moonshot AI (Kimi)**: moonshot-v1-8k, moonshot-v1-32k, etc.
+- **DeepSeek**: deepseek-chat, deepseek-coder, etc.
+- **01.AI (Yi series)**: yi-large, yi-medium, etc.
+- **Local deployments**: Ollama, vLLM, etc.
+
+[See more configurations](https://github.com/run-llama/llama_index/blob/main/llama-index-integrations/llms/llama-index-llms-openai-like/llama_index/llms/openai_like/base.py#L17)
+
+#### Example: Zhipu GLM-4-Flash
+
+```lua
+llm = { -- Configuration for the Language Model (LLM) used by the RAG service
+ provider = "openai_like", -- The LLM provider ("openai_like")
+ endpoint = "https://open.bigmodel.cn/api/paas/v4", -- GLM OpenAI-compatible endpoint
+ api_key = "GLM_API_KEY", -- Environment variable name for GLM API key
+ model = "glm-4-flash", -- The GLM model name
+ extra = {
+ temperature = 0.7,
+ max_tokens = 4096,
+ context_window = 32768, -- GLM-4-Flash context window
+ },
+},
+```
+
+#### Example: Alibaba Qwen (DashScope)
+
+```lua
+llm = { -- Configuration for the Language Model (LLM) used by the RAG service
+ provider = "openai_like", -- The LLM provider ("openai_like")
+ endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1", -- DashScope OpenAI-compatible endpoint
+ api_key = "DASHSCOPE_API_KEY", -- Environment variable name for DashScope API key
+ model = "qwen-plus", -- The Qwen model name
+ extra = {
+ temperature = 0.7,
+ max_tokens = 4096,
+ context_window = 32768,
+ },
+},
+```
+
+#### Example: Moonshot Kimi
+
+```lua
+llm = { -- Configuration for the Language Model (LLM) used by the RAG service
+ provider = "openai_like", -- The LLM provider ("openai_like")
+ endpoint = "https://api.moonshot.cn/v1", -- Moonshot OpenAI-compatible endpoint
+ api_key = "MOONSHOT_API_KEY", -- Environment variable name for Moonshot API key
+ model = "moonshot-v1-8k", -- The Moonshot model name
+ extra = {
+ temperature = 0.7,
+ max_tokens = 4096,
+ context_window = 8192,
+ },
 },
 ```
 
