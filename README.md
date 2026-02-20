@@ -1298,33 +1298,68 @@ Avante provides a RAG service, which is a tool for obtaining the required contex
     enabled = false, -- Enables the RAG service
     host_mount = os.getenv("HOME"), -- Host mount path for the rag service (Docker will mount this path)
     runner = "docker", -- Runner for the RAG service (can use docker or nix)
-    llm = { -- Language Model (LLM) configuration for RAG service
-      provider = "openai", -- LLM provider
-      endpoint = "https://api.openai.com/v1", -- LLM API endpoint
-      api_key = "OPENAI_API_KEY", -- Environment variable name for the LLM API key
-      model = "gpt-4o-mini", -- LLM model name
-      extra = nil, -- Additional configuration options for LLM
-    },
-    embed = { -- Embedding model configuration for RAG service
-      provider = "openai", -- Embedding provider
-      endpoint = "https://api.openai.com/v1", -- Embedding API endpoint
-      api_key = "OPENAI_API_KEY", -- Environment variable name for the embedding API key
-      model = "text-embedding-3-large", -- Embedding model name
-      extra = nil, -- Additional configuration options for the embedding model
-    },
-    docker_extra_args = "", -- Extra arguments to pass to the docker command
-  },
+ image = "avante-rag-service:local", -- Use local image for custom providers (optional)
+ llm = { -- Language Model (LLM) configuration for RAG service
+ provider = "openai_like", -- LLM provider: "openai", "ollama", "dashscope", "openai_like", etc.
+ endpoint = "https://open.bigmodel.cn/api/paas/v4", -- LLM API endpoint
+ api_key = "GLM_API_KEY", -- Environment variable name for the LLM API key
+ model = "glm-4.7-flash", -- LLM model name
+ extra = { -- Additional configuration options for LLM
+ temperature = 0.7,
+ max_tokens = 4096,
+ context_window = 32768,
+ },
+ },
+ embed = { -- Embedding model configuration for RAG service
+ provider = "openai_like", -- Embedding provider: "openai", "ollama", "dashscope", "openai_like", etc.
+ endpoint = "https://ai.gitee.com/v1", -- Embedding API endpoint
+ api_key = "GITEE_AI_API_KEY", -- Environment variable name for the embedding API key
+ model = "Qwen3-Embedding-8B", -- Embedding model name
+ extra = { -- Additional configuration options for the embedding model
+ dimensions = 1024,
+ max_retries = 3,
+ },
+ },
+ docker_extra_args = "", -- Extra arguments to pass to the docker command
+ },
 ```
 
-The RAG Service can currently configure the LLM and embedding models separately. In the `llm` and `embed` configuration blocks, you can set the following fields:
+The RAG Service can configure the LLM and embedding models separately. In the `llm` and `embed` configuration blocks, you can set the following fields:
 
-- `provider`: Model provider (e.g., "openai", "ollama", "dashscope", and "openrouter")
+- `provider`: Model provider (e.g., "openai", "ollama", "dashscope", "openai_like", "openrouter")
+  - Use `openai_like` for any OpenAI-compatible API (Zhipu AI, Gitee AI, Moonshot, etc.)
 - `endpoint`: API endpoint
-- `api_key`: Environment variable name for the API key
+- `api_key`: Environment variable name for the API key (e.g., "GLM_API_KEY", "GITEE_AI_API_KEY")
 - `model`: Model name
 - `extra`: Additional configuration options
 
-For detailed configuration of different model providers, you can check [here](./py/rag-service/README.md).
+### Provider Independence
+
+You can mix and match different providers for LLM and Embedding:
+
+**Example: Zhipu AI LLM + Gitee AI Embedding (Recommended for Chinese Users)**
+```lua
+llm = {
+ provider = "openai_like",
+ endpoint = "https://open.bigmodel.cn/api/paas/v4",
+ api_key = "GLM_API_KEY",
+ model = "glm-4.7-flash",
+},
+embed = {
+ provider = "openai_like",
+ endpoint = "https://ai.gitee.com/v1",
+ api_key = "GITEE_AI_API_KEY",
+ model = "Qwen3-Embedding-8B",
+},
+```
+
+**Environment Variables:**
+```bash
+export GLM_API_KEY="your_zhipu_api_key"
+export GITEE_AI_API_KEY="your_gitee_ai_api_key"
+```
+
+For detailed configuration of different model providers, see [RAG Service README](./py/rag-service/README.md).
 
 Additionally, RAG Service also depends on Docker! (For macOS users, OrbStack is recommended as a Docker alternative).
 

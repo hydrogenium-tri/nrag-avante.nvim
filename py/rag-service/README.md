@@ -190,7 +190,209 @@ embed = { -- Configuration for the Embedding Model used by the RAG service
   api_key = "", -- Ollama typically does not require an API key
   model = "nomic-embed-text", -- The Embedding model name (e.g., "nomic-embed-text")
   extra = { -- Extra configuration options for the Embedding model (optional)
-    embed_batch_size = 10，
-  },
+ embed_batch_size = 10,
+ },
 },
+```
+
+### OpenAI-Like Embedding Configuration (For OpenAI-Compatible APIs)
+
+Use this provider to access any service that implements the OpenAI Embeddings API protocol, including:
+- **Gitee AI**: Qwen3-Embedding series, bge-large-zh-v1.5, etc.
+- **Zhipu AI**: embedding-2, embedding-3, etc.
+- **Alibaba DashScope**: text-embedding-v1, text-embedding-v2, etc.
+- **Moonshot AI**: moonshot-embedding-v1, etc.
+- **Local deployments**: Ollama, vLLM with embedding models, etc.
+
+[See more configurations](https://github.com/run-llama/llama_index/blob/main/llama-index-integrations/embeddings/llama-index-embeddings-openai-like/llama_index/embeddings/openai_like/base.py)
+
+#### Example: Gitee AI Qwen3-Embedding-8B
+
+```lua
+embed = { -- Configuration for the Embedding Model used by the RAG service
+ provider = "openai_like", -- The Embedding provider ("openai_like")
+ endpoint = "https://ai.gitee.com/v1", -- Gitee AI OpenAI-compatible endpoint
+ api_key = "GITEE_AI_API_KEY", -- Environment variable name for Gitee AI API key
+ model = "Qwen3-Embedding-8B", -- The Gitee AI embedding model name
+ extra = {-- Extra configuration options (optional)
+ dimensions = 1024, -- Output embedding dimensions (model-specific)
+ max_retries = 3, -- Number of retry attempts for failed requests
+ },
+},
+```
+
+#### Example: Zhipu AI Embedding-2
+
+```lua
+embed = { -- Configuration for the Embedding Model used by the RAG service
+ provider = "openai_like", -- The Embedding provider ("openai_like")
+ endpoint = "https://open.bigmodel.cn/api/paas/v4", -- Zhipu AI OpenAI-compatible endpoint
+ api_key = "GLM_API_KEY", -- Environment variable name for Zhipu AI API key
+ model = "embedding-2", -- The Zhipu AI embedding model name
+ extra = {-- Extra configuration options (optional)
+ dimensions = 1024,
+ max_retries = 3,
+ },
+},
+```
+
+## Complete Configuration Examples
+
+### Example 1: Zhipu AI LLM + Gitee AI Embedding (Recommended for Chinese Users)
+
+This configuration uses Zhipu AI's GLM-4.7-Flash for language tasks and Gitee AI's Qwen3-Embedding-8B for embeddings:
+
+```lua
+rag_service = {
+ enabled = true,
+ host_mount = os.getenv("HOME"),
+ runner = "docker",
+ image = "avante-rag-service:local", -- Use local image for custom providers
+ llm = { -- Zhipu AI GLM-4.7-Flash for language tasks
+  provider = "openai_like",
+  endpoint = "https://open.bigmodel.cn/api/paas/v4",
+  api_key = "GLM_API_KEY", -- Set export GLM_API_KEY=your_zhipu_api_key
+  model = "glm-4.7-flash", -- Latest Zhipu GLM model
+  extra = {
+   temperature = 0.7,
+   max_tokens = 4096,
+   context_window = 32768,
+  },
+ },
+ embed = { -- Gitee AI Qwen3-Embedding-8B for embeddings
+  provider = "openai_like",
+  endpoint = "https://ai.gitee.com/v1",
+  api_key = "GITEE_AI_API_KEY", -- Set export GITEE_AI_API_KEY=your_gitee_api_key
+  model = "Qwen3-Embedding-8B", -- Gitee AI embedding model
+  extra = {
+   dimensions = 1024,
+   max_retries = 3,
+  },
+ },
+ docker_extra_args = "",
+},
+```
+
+**Environment Variables Setup:**
+```bash
+# Zhipu AI API Key (for LLM)
+export GLM_API_KEY="your_zhipu_api_key_here"
+
+# Gitee AI API Key (for Embedding)
+export GITEE_AI_API_KEY="your_gitee_ai_api_key_here"
+```
+
+### Example 2: OpenAI GPT-4 + OpenAI Embeddings
+
+```lua
+rag_service = {
+ enabled = true,
+ host_mount = os.getenv("HOME"),
+ runner = "docker",
+ llm = {
+  provider = "openai",
+  endpoint = "https://api.openai.com/v1",
+  api_key = "OPENAI_API_KEY",
+  model = "gpt-4o-mini",
+  extra = {
+   temperature = 0.7,
+   max_tokens = 512,
+  },
+ },
+ embed = {
+  provider = "openai",
+  endpoint = "https://api.openai.com/v1",
+  api_key = "OPENAI_API_KEY",
+  model = "text-embedding-3-large",
+  extra = {
+   dimensions = 1024,
+  },
+ },
+},
+```
+
+### Example 3: Ollama Local LLM + Ollama Local Embedding
+
+```lua
+rag_service = {
+ enabled = true,
+ host_mount = os.getenv("HOME"),
+ runner = "docker",
+ llm = {
+  provider = "ollama",
+  endpoint = "http://host.docker.internal:11434", -- Use host.docker.internal to access host from Docker
+  api_key = "",
+  model = "llama3.1",
+  extra = nil,
+ },
+ embed = {
+  provider = "ollama",
+  endpoint = "http://host.docker.internal:11434",
+  api_key = "",
+  model = "nomic-embed-text",
+  extra = {
+   embed_batch_size = 10,
+  },
+ },
+},
+```
+
+## Important Notes
+
+### LLM vs Embedding Configuration Differences
+
+1. **LLM Configuration** (`llm` section):
+   - Used for generating responses, understanding queries, and reasoning
+   - Requires more computational power
+   - Models: GPT-4, GLM-4, Qwen, Llama, etc.
+   - Parameters: `temperature`, `max_tokens`, `context_window`
+
+2. **Embedding Configuration** (`embed` section):
+   - Used for converting text to vector representations
+   - Used for semantic search and retrieval
+   - Models: text-embedding-3-large, Qwen3-Embedding-8B, etc.
+   - Parameters: `dimensions` (output vector size), `embed_batch_size`
+
+### Key Points
+
+- **Provider Independence**: You can mix and match different providers for LLM and Embedding
+  - Example: Zhipu AI for LLM + Gitee AI for Embedding
+  - Example: Ollama for LLM + OpenAI for Embedding
+
+- **API Key Security**: Never hardcode API keys in your configuration!
+  - Always use environment variables: `api_key = "ENV_VAR_NAME"`
+  - The RAG service will read the value from the environment
+
+- **Context Window**: For LLM, set `context_window` appropriately based on the model's capabilities
+  - GLM-4.7-Flash: 32768 tokens
+  - GPT-4o-mini: 16384 tokens
+  - Qwen-Plus: 32768 tokens
+
+- **Embedding Dimensions**: Different embedding models output different vector sizes
+  - Qwen3-Embedding-8B: 1024 dimensions
+  - text-embedding-3-large: 3072 dimensions (configurable)
+  - embedding-2: 1024 dimensions
+
+### Troubleshooting
+
+**Error: "No schema matches" (400 Bad Request)**
+- This is usually caused by invalid content being sent to the embedding API
+- The RAG service automatically skips invalid documents and continues
+- Error rate < 1% is considered normal and acceptable
+
+**Error: "Failed to load index from storage"**
+- This appears on first run when no index exists yet
+- The service will automatically create a new index
+- Safe to ignore
+
+**Building Local Image**:
+If you're using custom providers (like `openai_like`), you need to build a local Docker image:
+```bash
+cd py/rag-service
+docker build -t avante-rag-service:local .
+```
+
+Then update your Neovim config:
+```lua
+image = "avante-rag-service:local",
 ```
